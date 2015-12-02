@@ -44,6 +44,9 @@ void nmi_handler(void);
 void empty_def_handler(void);
 // this is the code for an hard fault.
 void hardfault_handler(void);
+extern void UARTStdioIntHandler(void);
+extern void USB0DeviceIntHandler(void);
+extern void SysTickIntHandler(void);
 
 //-----------------------------------------------------------------------------
 // 						     Variables declarations
@@ -87,14 +90,14 @@ void(* const myvectors[])(void) = {
     empty_def_handler,		// Debug monitor					12
     0,						// Reserved							13
     empty_def_handler,		// PendSV							14
-    empty_def_handler,		// SysTick							15
+    SysTickIntHandler,		// SysTick							15
     // Peripherial interrupts start here.
 	empty_def_handler,		// GPIO Port A						16
 	empty_def_handler,		// GPIO Port B						17
 	empty_def_handler,		// GPIO Port C						18
 	empty_def_handler,		// GPIO Port D						19
 	empty_def_handler,		// GPIO Port E						20
-	empty_def_handler,		// UART 0							21
+	UARTStdioIntHandler,    // UART 0							21
 	empty_def_handler,		// UART 1							22
 	empty_def_handler,		// SSI 0							23
 	empty_def_handler,		// I2C 0							24
@@ -129,11 +132,11 @@ void(* const myvectors[])(void) = {
 	empty_def_handler,		// I2C 1							53
 	0,						// Reserved							54
 	empty_def_handler,		// CAN 0							55
-	0,						// Reserved							56
+	empty_def_handler,	    // CAN 1                            56
 	0,						// Reserved							57
 	0,						// Reserved							58
 	empty_def_handler,		// Hibernation module				59
-	empty_def_handler,		// USB								60
+	USB0DeviceIntHandler,	// USB								60
 	0,						// Reserved							61
 	empty_def_handler,		// UDMA SW							62
 	empty_def_handler,		// UDMA Error						63

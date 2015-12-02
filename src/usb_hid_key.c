@@ -290,7 +290,6 @@ KeyboardHandler(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgData,
         {
             g_bConnected = true;
             g_bSuspended = false;
-            ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
             break;
         }
 
@@ -300,7 +299,6 @@ KeyboardHandler(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgData,
         case USB_EVENT_DISCONNECTED:
         {
             g_bConnected = false;
-            ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, 0);
             break;
         }
 
@@ -316,10 +314,8 @@ KeyboardHandler(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgData,
             // Enter the idle state since we finished sending something.
             //
             g_eKeyboardState = STATE_IDLE;
-            ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
             for (;i < 100000; ++i)
                 ;
-            ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0);
             break;
         }
 
@@ -329,7 +325,6 @@ KeyboardHandler(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgData,
         case USB_EVENT_SUSPEND:
         {
             g_bSuspended = true;
-            ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
             break;
         }
 
@@ -353,8 +348,7 @@ KeyboardHandler(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgData,
             // Set the LED to match the current state of the caps lock LED.
             //
             ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2,
-                             (ui32MsgData & HID_KEYB_CAPS_LOCK) ? GPIO_PIN_2 :
-                             0);
+                             (ui32MsgData & HID_KEYB_CAPS_LOCK) ? GPIO_PIN_2 : 0);
 
             break;
         }
@@ -514,6 +508,43 @@ SysTickIntHandler(void)
 
 //*****************************************************************************
 //
+// Configure the UART and its pins.  This must be called before UARTprintf().
+//
+//*****************************************************************************
+void
+ConfigureUART(void)
+{
+    //
+    // Enable the GPIO Peripheral used by the UART.
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+
+    //
+    // Enable UART0
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+
+    //
+    // Configure GPIO Pins for UART mode.
+    //
+    ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
+    ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
+    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+    //
+    // Use the internal 16MHz oscillator as the UART clock source.
+    //
+    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
+
+    //
+    // Initialize the UART for console I/O.
+    //
+    UARTStdioConfig(0, 115200, 16000000);
+}
+
+
+//*****************************************************************************
+//
 // This is the main loop that runs the application.
 //
 //*****************************************************************************
@@ -538,32 +569,30 @@ main(void)
                        SYSCTL_XTAL_16MHZ);
 
     //
-    // Configure the required pins for USB operation.
+    // Enable the GPIO port that is used for the on-board LED.
     //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
-//    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-//    ROM_GPIOPinConfigure(GPIO_PD2_USB0EPEN);
-//    ROM_GPIOPinTypeUSBDigital(GPIO_PORTD_BASE, GPIO_PIN_2);
+    //
+    // Enable the GPIO pin for the Blue LED (PF2).
+    //
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+
+    //
+    // Enable the UART.
+    //
+    ConfigureUART();
+    UARTprintf("Keyboard device application\n");
 
     // Configure USB0DM & USB0DP (PD4 & PD5)
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-    ROM_GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+    SysCtlGPIOAHBEnable(SYSCTL_PERIPH_GPIOD);
+    ROM_GPIOPinTypeUSBAnalog(GPIO_PORTD_AHB_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     //Configure USB0ID & USB0VBUS (PB0 & PB1)
 //    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 //    ROM_GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
-    //
-    // Enable the UART.
-    //
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-
-    UARTStdioConfig(0, 9600, ROM_SysCtlClockGet());
-    UARTprintf("Keyboard device application\n");
 
     //
     // Erratum workaround for silicon revision A1.  VBUS must have pull-down.
@@ -573,12 +602,6 @@ main(void)
         HWREG(GPIO_PORTB_BASE + GPIO_O_PDR) |= GPIO_PIN_1;
     }
 
-    //
-    // Enable the GPIO that is used for the on-board LED.
-    //
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
-    ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
 
     //
     // Initialize the buttons driver

@@ -58,7 +58,7 @@ OD      = $(PREFIX_ARM)-objdump
 # Option arguments for C compiler.
 CFLAGS = -mthumb $(CPU) $(FPU) -O0 -ffunction-sections -fdata-sections -MD -std=c99 -Wall -pedantic -c -g
 # Library stuff passed as flags!
-CFLAGS += -I $(STELLARISWARE_PATH) -I $(EXTRAINC) -DPART_$(PART) -c -DTARGET_IS_TM4C123_RB1 -Dgcc
+CFLAGS += -I$(STELLARISWARE_PATH) -I$(EXTRAINC) -DPART_$(PART) -c -DTARGET_IS_TM4C123_RB1 -Dgcc -DUART_BUFFERED
 
 # Flags for LD
 LFLAGS  = --gc-sections
