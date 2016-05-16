@@ -576,7 +576,7 @@ main(void)
     //
     // Enable the GPIO pin for the Blue LED (PF2).
     //
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
 
     //
     // Enable the UART.
