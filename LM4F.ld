@@ -35,13 +35,11 @@
 * Memory definition:
 * FLASH:	start point 0x00,		lenght 0x40000.
 * SRAM:		start point 0x20000000	length 0x8000.
-* STACK:	start point 0x20007FFF	lenght 0x0.
 */
 MEMORY
 {
     FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00040000
     RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00008000
-    STACK (rwx) : ORIGIN = 0x20007FFF , LENGTH = 0x00000000
 }
 
 /*
@@ -94,12 +92,4 @@ SECTIONS
         _end_bss = .;		/* End index for .bss segment */
     }>RAM
     
-	/*
-	* .stack contains nothing, but I use it to set the first vector item (SP R13).
-	*/
-	.stack : 
-	{
-		_stack_top = .; /* An index to the end of the stack */
-	}>STACK
-	
 }

@@ -52,8 +52,6 @@ extern void SysTickIntHandler(void);
 //                              Variables declarations
 //-----------------------------------------------------------------------------
 
-// defined by the linker it's the stack top variable (End of ram)
-extern unsigned long _stack_top;
 // defined by the liker, this are just start and end marker for each section.
 // .text (code)
 extern unsigned long _start_text;
@@ -65,6 +63,8 @@ extern unsigned long _end_data;
 extern unsigned long _start_bss;
 extern unsigned long _end_bss;
 
+static unsigned long pui32Stack[256];
+
 // NVIC ISR table
 // the funny looking void(* myvectors[])(void) basically it's a way to make cc accept an array of function pointers.
 __attribute__ ((section(".nvic_table")))
@@ -72,7 +72,7 @@ void(* const myvectors[])(void) = {
     // This are the fixed priority interrupts and the stack pointer loaded at startup at R13 (SP).
     //                                                VECTOR N (Check Datasheet)
     // here the compiler it's boring.. have to figure that out
-    (void (*)) &_stack_top,
+    (void (*)(void)) ((unsigned long)pui32Stack + sizeof(pui32Stack)),
                               // stack pointer should be
                               // placed here at startup.            0
     rst_handler,              // code entry point                   1
@@ -101,11 +101,11 @@ void(* const myvectors[])(void) = {
     empty_def_handler,        // UART 1                             22
     empty_def_handler,        // SSI 0                              23
     empty_def_handler,        // I2C 0                              24
-    0,                        // Reserved                           25
-    0,                        // Reserved                           26
-    0,                        // Reserved                           27
-    0,                        // Reserved                           28
-    0,                        // Reserved                           29
+    empty_def_handler,        // PWM Fault                          25
+    empty_def_handler,        // PWM Generator 0                    26
+    empty_def_handler,        // PWM Generator 1                    27
+    empty_def_handler,        // PWM Generator 2                    28
+    empty_def_handler,        // Quadrature Encoder 0               29
     empty_def_handler,        // ADC 0 Seq 0                        30
     empty_def_handler,        // ADC 0 Seq 1                        31
     empty_def_handler,        // ADC 0 Seq 2                        32
@@ -119,25 +119,25 @@ void(* const myvectors[])(void) = {
     empty_def_handler,        // 16/32 bit timer 2 B                40
     empty_def_handler,        // Analog comparator 0                41
     empty_def_handler,        // Analog comparator 1                42
-    0,                        // Reserved                           43
+    empty_def_handler,        // Analog comparator 2                43
     empty_def_handler,        // System control                     44
     empty_def_handler,        // Flash + EEPROM control             45
     empty_def_handler,        // GPIO Port F                        46
-    0,                        // Reserved                           47
-    0,                        // Reserved                           48
+    empty_def_handler,        // GPIO Port G                        47
+    empty_def_handler,        // GPIO Port H                        48
     empty_def_handler,        // UART 2                             49
     empty_def_handler,        // SSI 1                              50
     empty_def_handler,        // 16/32 bit timer 3 A                51
     empty_def_handler,        // 16/32 bit timer 3 B                52
     empty_def_handler,        // I2C 1                              53
-    0,                        // Reserved                           54
+    empty_def_handler,        // Quadrature Encoder 1               54
     empty_def_handler,        // CAN 0                              55
     empty_def_handler,        // CAN 1                              56
     0,                        // Reserved                           57
     0,                        // Reserved                           58
     empty_def_handler,        // Hibernation module                 59
-    USB0DeviceIntHandler,     // USB                                60
-    0,                        // Reserved                           61
+    USB0DeviceIntHandler,     // USB0                               60
+    empty_def_handler,        // PWM Generator 3                    61
     empty_def_handler,        // UDMA SW                            62
     empty_def_handler,        // UDMA Error                         63
     empty_def_handler,        // ADC 1 Seq 0                        64
@@ -146,11 +146,11 @@ void(* const myvectors[])(void) = {
     empty_def_handler,        // ADC 1 Seq 3                        67
     0,                        // Reserved                           68
     0,                        // Reserved                           69
-    0,                        // Reserved                           70
-    0,                        // Reserved                           71
-    0,                        // Reserved                           72
+    empty_def_handler,        // GPIO Port J                        70
+    empty_def_handler,        // GPIO Port K                        71
+    empty_def_handler,        // GPIO Port L                        72
     empty_def_handler,        // SSI 2                              73
-    empty_def_handler,        // SSI 2                              74
+    empty_def_handler,        // SSI 3                              74
     empty_def_handler,        // UART 3                             75
     empty_def_handler,        // UART 4                             76
     empty_def_handler,        // UART 5                             77
@@ -201,36 +201,36 @@ void(* const myvectors[])(void) = {
     empty_def_handler,        // System Exception                   122
     0,                        // Reserved                           123
     0,                        // Reserved                           124
-    0,                        // Reserved                           125
-    0,                        // Reserved                           126
-    0,                        // Reserved                           127
-    0,                        // Reserved                           128
-    0,                        // Reserved                           129
+    empty_def_handler,        // Reserved                           125
+    empty_def_handler,        // Reserved                           126
+    empty_def_handler,        // Reserved                           127
+    empty_def_handler,        // Reserved                           128
+    empty_def_handler,        // Reserved                           129
     0,                        // Reserved                           130
     0,                        // Reserved                           131
-    0,                        // Reserved                           132
-    0,                        // Reserved                           133
-    0,                        // Reserved                           134
-    0,                        // Reserved                           135
-    0,                        // Reserved                           136
-    0,                        // Reserved                           137
-    0,                        // Reserved                           138
-    0,                        // Reserved                           139
-    0,                        // Reserved                           140
-    0,                        // Reserved                           141
-    0,                        // Reserved                           142
-    0,                        // Reserved                           143
-    0,                        // Reserved                           144
-    0,                        // Reserved                           145
-    0,                        // Reserved                           146
-    0,                        // Reserved                           147
-    0,                        // Reserved                           148
-    0,                        // Reserved                           149
-    0,                        // Reserved                           150
-    0,                        // Reserved                           151
-    0,                        // Reserved                           152
-    0,                        // Reserved                           153
-    0                         // Reserved                           154
+    empty_def_handler,        // Reserved                           132
+    empty_def_handler,        // Reserved                           133
+    empty_def_handler,        // Reserved                           134
+    empty_def_handler,        // Reserved                           135
+    empty_def_handler,        // Reserved                           136
+    empty_def_handler,        // Reserved                           137
+    empty_def_handler,        // Reserved                           138
+    empty_def_handler,        // Reserved                           139
+    empty_def_handler,        // Reserved                           140
+    empty_def_handler,        // Reserved                           141
+    empty_def_handler,        // Reserved                           142
+    empty_def_handler,        // Reserved                           143
+    empty_def_handler,        // Reserved                           144
+    empty_def_handler,        // Reserved                           145
+    empty_def_handler,        // Reserved                           146
+    empty_def_handler,        // Reserved                           147
+    empty_def_handler,        // Reserved                           148
+    empty_def_handler,        // Reserved                           149
+    empty_def_handler,        // Reserved                           150
+    empty_def_handler,        // Reserved                           151
+    empty_def_handler,        // Reserved                           152
+    empty_def_handler,        // Reserved                           153
+    empty_def_handler         // Reserved                           154
 };
 
 //-----------------------------------------------------------------------------
