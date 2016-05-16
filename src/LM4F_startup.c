@@ -29,7 +29,9 @@
 * Version:        1.0.0.
 * Description:    LM4F120H5QR startup code.
 */
-
+#include <stdint.h>
+#include "inc/hw_nvic.h"
+#include "inc/hw_types.h"
 //-----------------------------------------------------------------------------
 //                              Functions declarations
 //-----------------------------------------------------------------------------
@@ -253,21 +255,32 @@ void rst_handler(void){
     unsigned long *src;
     unsigned long *dest;
 
-    //this should be good!
+    //
+    // Copy the data segment initializers from flash to SRAM.
+    //
     src = &_end_text;
-    dest = &_start_data;
-
-    //this too
-    while(dest < &_end_data)
+    for(dest = &_start_data; dest < &_end_data; )
     {
         *dest++ = *src++;
     }
 
-    // now set the .bss segment to 0!
-    dest = &_start_bss;
-    while(dest < &_end_bss){
-        *dest++ = 0;
-    }
+    //
+    // Zero fill the bss segment.
+    //
+    __asm("    ldr     r0, =_start_bss\n"
+          "    ldr     r1, =_end_bss\n"
+          "    mov     r2, #0\n"
+          "    .thumb_func\n"
+          "zero_loop:\n"
+          "        cmp     r0, r1\n"
+          "        it      lt\n"
+          "        strlt   r2, [r0], #4\n"
+          "        blt     zero_loop");
+
+    HWREG(NVIC_CPAC) = ((HWREG(NVIC_CPAC) &
+                         ~(NVIC_CPAC_CP10_M | NVIC_CPAC_CP11_M)) |
+                        NVIC_CPAC_CP10_FULL | NVIC_CPAC_CP11_FULL);
+
 
     // after setting copying .data to ram and "zero-ing" .bss we are good
     // to start the main() method!
